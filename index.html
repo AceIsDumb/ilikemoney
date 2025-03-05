@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I like money</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+        .goal-section, .balance-section {
+            margin-top: 20px;
+            padding: 10px;
+            background: #f1f1f1;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>I like money</h1>
+        
+        <div class="balance-section">
+            <h3>Current Balance: $<span id="currentBalance">1000.00</span></h3>
+        </div>
+        
+        <input type="text" id="description" placeholder="Description">
+        <input type="number" id="amount" placeholder="Amount">
+        <button onclick="addTransaction()">Add Transaction</button>
+        
+        <div class="goal-section">
+            <h3>Set Spending Goal</h3>
+            <input type="number" id="goalAmount" placeholder="Goal Amount">
+            <button onclick="setGoal()">Set Goal</button>
+            <p id="goalStatus">No goal set.</p>
+        </div>
+        
+        <div id="transactions">
+            <h2>Transaction History</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="transactionTable">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <script>
+        let totalSpent = 0;
+        let spendingGoal = 0;
+        let currentBalance = 1000.00; // Initial balance
+
+        function addTransaction() {
+            let description = document.getElementById("description").value;
+            let amount = parseFloat(document.getElementById("amount").value);
+            if (description && amount && amount > 0) {
+                let table = document.getElementById("transactionTable");
+                let row = table.insertRow();
+                let descCell = row.insertCell(0);
+                let amountCell = row.insertCell(1);
+                let deleteCell = row.insertCell(2);
+                
+                descCell.innerText = description;
+                amountCell.innerText = `$${amount.toFixed(2)}`;
+                totalSpent += amount;
+                currentBalance -= amount;
+                updateBalance();
+                updateGoalStatus();
+                
+                let deleteButton = document.createElement("button");
+                deleteButton.innerText = "Delete";
+                deleteButton.onclick = function () {
+                    totalSpent -= amount;
+                    currentBalance += amount;
+                    table.deleteRow(row.rowIndex - 1);
+                    updateBalance();
+                    updateGoalStatus();
+                };
+                deleteCell.appendChild(deleteButton);
+                
+                document.getElementById("description").value = "";
+                document.getElementById("amount").value = "";
+            }
+        }
+
+        function setGoal() {
+            spendingGoal = parseFloat(document.getElementById("goalAmount").value);
+            if (spendingGoal > 0) {
+                updateGoalStatus();
+            } else {
+                document.getElementById("goalStatus").innerText = "Invalid goal amount.";
+            }
+        }
+
+        function updateGoalStatus() {
+            if (spendingGoal > 0) {
+                let remaining = spendingGoal - totalSpent;
+                if (remaining > 0) {
+                    document.getElementById("goalStatus").innerText = `Remaining to spend: $${remaining.toFixed(2)}`;
+                } else {
+                    document.getElementById("goalStatus").innerText = "Goal reached! Be mindful of further spending.";
+                }
+            }
+        }
+
+        function updateBalance() {
+            document.getElementById("currentBalance").innerText = currentBalance.toFixed(2);
+        }
+    </script>
+</body>
+</html>
