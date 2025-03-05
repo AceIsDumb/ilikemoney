@@ -54,14 +54,28 @@
             background: #f1f1f1;
             border-radius: 5px;
         }
+        #landingPage {
+            display: block;
+        }
+        #mainApp {
+            display: none;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div id="landingPage" class="container">
+        <h1>Hi! How much money do you have?</h1>
+        <input type="number" id="startingBalance" placeholder="Enter balance here :3">
+        <button onclick="startApp()">Start</button>
+    </div>
+    
+    <div id="mainApp" class="container">
         <h1>I like money</h1>
         
         <div class="balance-section">
-            <h3>Current Balance: $<span id="currentBalance">1000.00</span></h3>
+            <h3>Current Balance: $<span id="currentBalance">0.00</span></h3>
+            <input type="number" id="topUpAmount" placeholder="Enter amount to add">
+            <button onclick="addMoney()">Add Money</button>
         </div>
         
         <input type="text" id="description" placeholder="Description">
@@ -94,44 +108,55 @@
     <script>
         let totalSpent = 0;
         let spendingGoal = 0;
-        let currentBalance = 1000.00; // Initial balance
+        let currentBalance = 0;
+        let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+
+        function startApp() {
+            let startingBalance = parseFloat(document.getElementById("startingBalance").value);
+            if (!isNaN(startingBalance) && startingBalance >= 0) {
+                currentBalance = startingBalance;
+                localStorage.setItem("currentBalance", currentBalance);
+                document.getElementById("landingPage").style.display = "none";
+                document.getElementById("mainApp").style.display = "block";
+                updateBalance();
+                loadTransactions();
+            }
+        }
 
         function addTransaction() {
             let description = document.getElementById("description").value;
             let amount = parseFloat(document.getElementById("amount").value);
             if (description && amount && amount > 0) {
-                let table = document.getElementById("transactionTable");
-                let row = table.insertRow();
-                let descCell = row.insertCell(0);
-                let amountCell = row.insertCell(1);
-                let deleteCell = row.insertCell(2);
-                
-                descCell.innerText = description;
-                amountCell.innerText = `$${amount.toFixed(2)}`;
+                transactions.push({ description, amount: -amount });
+                localStorage.setItem("transactions", JSON.stringify(transactions));
+                updateTransactionTable();
                 totalSpent += amount;
                 currentBalance -= amount;
+                localStorage.setItem("currentBalance", currentBalance);
                 updateBalance();
                 updateGoalStatus();
-                
-                let deleteButton = document.createElement("button");
-                deleteButton.innerText = "Delete";
-                deleteButton.onclick = function () {
-                    totalSpent -= amount;
-                    currentBalance += amount;
-                    table.deleteRow(row.rowIndex - 1);
-                    updateBalance();
-                    updateGoalStatus();
-                };
-                deleteCell.appendChild(deleteButton);
-                
                 document.getElementById("description").value = "";
                 document.getElementById("amount").value = "";
+            }
+        }
+
+        function addMoney() {
+            let amount = parseFloat(document.getElementById("topUpAmount").value);
+            if (amount && amount > 0) {
+                transactions.push({ description: "Top Up", amount });
+                localStorage.setItem("transactions", JSON.stringify(transactions));
+                updateTransactionTable();
+                currentBalance += amount;
+                localStorage.setItem("currentBalance", currentBalance);
+                updateBalance();
+                document.getElementById("topUpAmount").value = "";
             }
         }
 
         function setGoal() {
             spendingGoal = parseFloat(document.getElementById("goalAmount").value);
             if (spendingGoal > 0) {
+                localStorage.setItem("spendingGoal", spendingGoal);
                 updateGoalStatus();
             } else {
                 document.getElementById("goalStatus").innerText = "Invalid goal amount.";
@@ -141,17 +166,44 @@
         function updateGoalStatus() {
             if (spendingGoal > 0) {
                 let remaining = spendingGoal - totalSpent;
-                if (remaining > 0) {
-                    document.getElementById("goalStatus").innerText = `Remaining to spend: $${remaining.toFixed(2)}`;
-                } else {
-                    document.getElementById("goalStatus").innerText = "Goal reached! Be mindful of further spending.";
-                }
+                document.getElementById("goalStatus").innerText = remaining > 0 ? `Remaining to spend: $${remaining.toFixed(2)}` : "Exceeded spending goal! Stop spending!";
             }
         }
 
         function updateBalance() {
             document.getElementById("currentBalance").innerText = currentBalance.toFixed(2);
         }
+
+        function updateTransactionTable() {
+            let table = document.getElementById("transactionTable");
+            table.innerHTML = "";
+            transactions.forEach((t, index) => {
+                let row = table.insertRow();
+                row.insertCell(0).innerText = t.description;
+                row.insertCell(1).innerText = `$${t.amount.toFixed(2)}`;
+                let deleteCell = row.insertCell(2);
+                let deleteButton = document.createElement("button");
+                deleteButton.innerText = "Delete";
+                deleteButton.onclick = function () {
+                    transactions.splice(index, 1);
+                    localStorage.setItem("transactions", JSON.stringify(transactions));
+                    updateTransactionTable();
+                };
+                deleteCell.appendChild(deleteButton);
+            });
+        }
+
+        function loadTransactions() {
+            updateTransactionTable();
+            updateBalance();
+        }
+
+        window.onload = function () {
+            currentBalance = parseFloat(localStorage.getItem("currentBalance")) || 0;
+            document.getElementById("landingPage").style.display = "none";
+            document.getElementById("mainApp").style.display = "block";
+            loadTransactions();
+        };
     </script>
 </body>
 </html>
