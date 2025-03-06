@@ -54,30 +54,16 @@
             background: #f1f1f1;
             border-radius: 5px;
         }
-        #landingPage {
-            display: block;
-        }
-        #mainApp {
-            display: none;
-        }
     </style>
 </head>
 <body>
-    <div id="landingPage" class="container">
-        <h1>Hi! How much money do you have?</h1>
-        <input type="number" id="startingBalance" placeholder="Enter balance here :3">
-        <button onclick="startApp()">Start</button>
-    </div>
-    
-    <div id="mainApp" class="container">
+    <div class="container">
         <h1>I like money</h1>
-        
         <div class="balance-section">
             <h3>Current Balance: $<span id="currentBalance">0.00</span></h3>
-            <input type="number" id="topUpAmount" placeholder="Enter amount to add">
+            <input type="number" id="topUpAmount" placeholder="Top up amount">
             <button onclick="addMoney()">Add Money</button>
         </div>
-        
         <input type="text" id="description" placeholder="Description">
         <input type="number" id="amount" placeholder="Amount">
         <button onclick="addTransaction()">Add Transaction</button>
@@ -89,121 +75,110 @@
             <p id="goalStatus">No goal set.</p>
         </div>
         
-        <div id="transactions">
+        <div>
             <h2>Transaction History</h2>
+            <select id="monthSelector" onchange="filterTransactions()"></select>
             <table>
                 <thead>
                     <tr>
                         <th>Description</th>
                         <th>Amount</th>
+                        <th>Date</th>
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="transactionTable">
-                </tbody>
+                <tbody id="transactionTable"></tbody>
             </table>
         </div>
     </div>
     
     <script>
-        let totalSpent = 0;
-        let spendingGoal = 0;
-        let currentBalance = 0;
-        let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+let currentBalance = parseFloat(localStorage.getItem("currentBalance")) || 0;
+let spendingGoal = parseFloat(localStorage.getItem("spendingGoal")) || 0;
 
-        function startApp() {
-            let startingBalance = parseFloat(document.getElementById("startingBalance").value);
-            if (!isNaN(startingBalance) && startingBalance >= 0) {
-                currentBalance = startingBalance;
-                localStorage.setItem("currentBalance", currentBalance);
-                document.getElementById("landingPage").style.display = "none";
-                document.getElementById("mainApp").style.display = "block";
-                updateBalance();
-                loadTransactions();
-            }
-        }
+function addTransaction() {
+    let description = document.getElementById("description").value;
+    let amount = parseFloat(document.getElementById("amount").value);
+    let date = new Date().toISOString().split("T")[0]; // Ensuring proper date format
+    let id = Date.now(); // Unique identifier for transactions
 
-        function addTransaction() {
-            let description = document.getElementById("description").value;
-            let amount = parseFloat(document.getElementById("amount").value);
-            if (description && amount && amount > 0) {
-                transactions.push({ description, amount: -amount });
-                localStorage.setItem("transactions", JSON.stringify(transactions));
-                updateTransactionTable();
-                totalSpent += amount;
-                currentBalance -= amount;
-                localStorage.setItem("currentBalance", currentBalance);
-                updateBalance();
-                updateGoalStatus();
-                document.getElementById("description").value = "";
-                document.getElementById("amount").value = "";
-            }
-        }
+    if (description && amount && amount > 0) {
+        transactions.push({ id, description, amount: -amount, date });
+        currentBalance -= amount;
+        saveAndUpdate();
+    }
+}
 
-        function addMoney() {
-            let amount = parseFloat(document.getElementById("topUpAmount").value);
-            if (amount && amount > 0) {
-                transactions.push({ description: "Top Up", amount });
-                localStorage.setItem("transactions", JSON.stringify(transactions));
-                updateTransactionTable();
-                currentBalance += amount;
-                localStorage.setItem("currentBalance", currentBalance);
-                updateBalance();
-                document.getElementById("topUpAmount").value = "";
-            }
-        }
+function addMoney() {
+    let amount = parseFloat(document.getElementById("topUpAmount").value);
+    let date = new Date().toISOString().split("T")[0];
+    let id = Date.now();
 
-        function setGoal() {
-            spendingGoal = parseFloat(document.getElementById("goalAmount").value);
-            if (spendingGoal > 0) {
-                localStorage.setItem("spendingGoal", spendingGoal);
-                updateGoalStatus();
-            } else {
-                document.getElementById("goalStatus").innerText = "Invalid goal amount.";
-            }
-        }
+    if (amount && amount > 0) {
+        transactions.push({ id, description: "Top Up", amount, date });
+        currentBalance += amount;
+        saveAndUpdate();
+    }
+}
 
-        function updateGoalStatus() {
-            if (spendingGoal > 0) {
-                let remaining = spendingGoal - totalSpent;
-                document.getElementById("goalStatus").innerText = remaining > 0 ? `Remaining to spend: $${remaining.toFixed(2)}` : "Exceeded spending goal! Stop spending!";
-            }
-        }
+function setGoal() {
+    spendingGoal = parseFloat(document.getElementById("goalAmount").value);
+    if (spendingGoal > 0) {
+        localStorage.setItem("spendingGoal", spendingGoal);
+        updateGoalStatus();
+    } else {
+        document.getElementById("goalStatus").innerText = "Invalid goal amount.";
+    }
+}
 
-        function updateBalance() {
-            document.getElementById("currentBalance").innerText = currentBalance.toFixed(2);
-        }
+function updateGoalStatus() {
+    let totalSpent = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+    let remaining = spendingGoal - totalSpent;
 
-        function updateTransactionTable() {
-            let table = document.getElementById("transactionTable");
-            table.innerHTML = "";
-            transactions.forEach((t, index) => {
-                let row = table.insertRow();
-                row.insertCell(0).innerText = t.description;
-                row.insertCell(1).innerText = `$${t.amount.toFixed(2)}`;
-                let deleteCell = row.insertCell(2);
-                let deleteButton = document.createElement("button");
-                deleteButton.innerText = "Delete";
-                deleteButton.onclick = function () {
-                    transactions.splice(index, 1);
-                    localStorage.setItem("transactions", JSON.stringify(transactions));
-                    updateTransactionTable();
-                };
-                deleteCell.appendChild(deleteButton);
-            });
-        }
+    if (spendingGoal > 0) {
+        document.getElementById("goalStatus").innerText = remaining > 0 
+            ? `Remaining to spend: $${remaining.toFixed(2)}` 
+            : "Exceeded spending goal! Stop spending!";
+    } else {
+        document.getElementById("goalStatus").innerText = "No goal set.";
+    }
+}
 
-        function loadTransactions() {
-            updateTransactionTable();
-            updateBalance();
-        }
+function updateBalance() {
+    document.getElementById("currentBalance").innerText = currentBalance.toFixed(2);
+}
 
-        window.onload = function () {
-            currentBalance = parseFloat(localStorage.getItem("currentBalance")) || 0;
-            document.getElementById("landingPage").style.display = "none";
-            document.getElementById("mainApp").style.display = "block";
-            loadTransactions();
+function updateTransactionTable() {
+    let table = document.getElementById("transactionTable");
+    table.innerHTML = "";
+
+    transactions.forEach(transaction => {
+        let row = table.insertRow();
+        row.insertCell(0).innerText = transaction.description;
+        row.insertCell(1).innerText = `$${transaction.amount.toFixed(2)}`;
+        row.insertCell(2).innerText = transaction.date;
+
+        let deleteCell = row.insertCell(3);
+        let deleteButton = document.createElement("button");
+        deleteButton.innerText = "Delete";
+        deleteButton.onclick = function () {
+            transactions = transactions.filter(t => t.id !== transaction.id); // Remove transaction by unique ID
+            saveAndUpdate();
         };
+        deleteCell.appendChild(deleteButton);
+    });
+}
+
+function saveAndUpdate() {
+    localStorage.setItem("transactions", JSON.stringify(transactions));
+    localStorage.setItem("currentBalance", currentBalance);
+    updateBalance();
+    updateTransactionTable();
+    updateGoalStatus();
+}
+
+window.onload = saveAndUpdate;
+
     </script>
 </body>
-</html>
