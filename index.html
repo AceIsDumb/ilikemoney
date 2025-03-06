@@ -6,53 +6,99 @@
     <title>I like money</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             text-align: center;
-            background-color: #f8f9fa;
+            background-color: #f4f7fa;
             margin: 0;
             padding: 20px;
         }
+
         .container {
             max-width: 600px;
             margin: auto;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 40px; 
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
         }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em; 
+        }
+
         input, button {
-            padding: 10px;
-            margin: 5px;
+            padding: 15px;
+            margin: 10px 0;
             border-radius: 5px;
-            border: 1px solid #ccc;
+            border: 1px solid #ced4da;
+            font-size: 1em;
+            width: calc(100% - 20px);
+            transition: border-color 0.3s, box-shadow 0.3s;
         }
+
+        input:focus {
+            border-color: #5cb85c;
+            box-shadow: 0 0 5px rgba(92, 184, 92, 0.5);
+            outline: none;
+        }
+
         button {
-            background-color: #007bff;
+            background-color: #5cb85c;
             color: white;
             border: none;
             cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
         }
+
         button:hover {
-            background-color: #0056b3;
+            background-color: #4cae4f;
+            transform: translateY(-2px);
         }
+
+        button:active {
+            transform: translateY(0);
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 10px;
+            margin-top: 30px;
         }
+
         th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            text-align: left;
+            font-size: 1em;
         }
+
         th {
-            background-color: #007bff;
+            background-color: #5cb85c;
             color: white;
         }
-        .goal-section, .balance-section {
-            margin-top: 20px;
-            padding: 10px;
-            background: #f1f1f1;
-            border-radius: 5px;
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover {
+            background-color: #e9ecef;
+        }
+
+        .goal-section, .balance-section, .transaction-input-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #goalStatus {
+            font-weight: bold;
+            margin-top: 10px;
+            color: #333;
         }
     </style>
 </head>
@@ -64,9 +110,11 @@
             <input type="number" id="topUpAmount" placeholder="Top up amount">
             <button onclick="addMoney()">Add Money</button>
         </div>
-        <input type="text" id="description" placeholder="Description">
-        <input type="number" id="amount" placeholder="Amount">
-        <button onclick="addTransaction()">Add Transaction</button>
+        <div class="transaction-input-section">
+            <input type="text" id="description" placeholder="Description">
+            <input type="number" id="amount" placeholder="Amount">
+            <button onclick="addTransaction()">Add Transaction</button>
+        </div>
         
         <div class="goal-section">
             <h3>Set Spending Goal</h3>
@@ -93,92 +141,93 @@
     </div>
     
     <script>
-let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
-let currentBalance = parseFloat(localStorage.getItem("currentBalance")) || 0;
-let spendingGoal = parseFloat(localStorage.getItem("spendingGoal")) || 0;
+        let transactions = JSON.parse(localStorage.getItem("transactions")) || [];
+        let currentBalance = parseFloat(localStorage.getItem("currentBalance")) || 0;
+        let spendingGoal = parseFloat(localStorage.getItem("spendingGoal")) || 0;
 
-function addTransaction() {
-    let description = document.getElementById("description").value;
-    let amount = parseFloat(document.getElementById("amount").value);
-    let date = new Date().toISOString().split("T")[0]; // Ensuring proper date format
-    let id = Date.now(); // Unique identifier for transactions
+        function addTransaction() {
+            let description = document.getElementById("description").value;
+            let amount = parseFloat(document.getElementById("amount").value);
+            let date = new Date().toISOString().split("T")[0]; // Ensuring proper date format
+            let id = Date.now(); // Unique identifier for transactions
 
-    if (description && amount && amount > 0) {
-        transactions.push({ id, description, amount: -amount, date });
-        currentBalance -= amount;
-        saveAndUpdate();
-    }
-}
+            if (description && amount && amount > 0) {
+                transactions.push({ id, description, amount: -amount, date });
+                currentBalance -= amount;
+                saveAndUpdate();
+            }
+        }
 
-function addMoney() {
-    let amount = parseFloat(document.getElementById("topUpAmount").value);
-    let date = new Date().toISOString().split("T")[0];
-    let id = Date.now();
+        function addMoney() {
+            let amount = parseFloat(document.getElementById("topUpAmount").value);
+            let date = new Date().toISOString().split("T")[0];
+            let id = Date.now();
 
-    if (amount && amount > 0) {
-        transactions.push({ id, description: "Top Up", amount, date });
-        currentBalance += amount;
-        saveAndUpdate();
-    }
-}
+            if (amount && amount > 0) {
+                transactions.push({ id, description: "Top Up", amount, date });
+                currentBalance += amount;
+                saveAndUpdate();
+            }
+        }
 
-function setGoal() {
-    spendingGoal = parseFloat(document.getElementById("goalAmount").value);
-    if (spendingGoal > 0) {
-        localStorage.setItem("spendingGoal", spendingGoal);
-        updateGoalStatus();
-    } else {
-        document.getElementById("goalStatus").innerText = "Invalid goal amount.";
-    }
-}
+        function setGoal() {
+            spendingGoal = parseFloat(document.getElementById("goalAmount").value);
+            if (spendingGoal > 0) {
+                localStorage.setItem("spendingGoal", spendingGoal);
+                updateGoalStatus();
+            } else {
+                document.getElementById("goalStatus").innerText = "Invalid goal amount.";
+            }
+        }
 
-function updateGoalStatus() {
-    let totalSpent = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
-    let remaining = spendingGoal - totalSpent;
+        function updateGoalStatus() {
+            let totalSpent = transactions.filter(t => t.amount < 0).reduce((sum, t) => sum + Math.abs(t.amount), 0);
+            let remaining = spendingGoal - totalSpent;
 
-    if (spendingGoal > 0) {
-        document.getElementById("goalStatus").innerText = remaining > 0 
-            ? `Remaining to spend: $${remaining.toFixed(2)}` 
-            : "Exceeded spending goal! Stop spending!";
-    } else {
-        document.getElementById("goalStatus").innerText = "No goal set.";
-    }
-}
+            if (spendingGoal > 0) {
+                document.getElementById("goalStatus").innerText = remaining > 0 
+                    ? `Remaining to spend: $${remaining.toFixed(2)}` 
+                    : "Exceeded spending goal! Stop spending!";
+            } else {
+                document.getElementById("goalStatus").innerText = "No goal set.";
+            }
+        }
 
-function updateBalance() {
-    document.getElementById("currentBalance").innerText = currentBalance.toFixed(2);
-}
+        function updateBalance() {
+            document.getElementById("currentBalance").innerText = currentBalance.toFixed(2);
+        }
 
-function updateTransactionTable() {
-    let table = document.getElementById("transactionTable");
-    table.innerHTML = "";
+        function updateTransactionTable() {
+            let table = document.getElementById("transactionTable");
+            table.innerHTML = "";
 
-    transactions.forEach(transaction => {
-        let row = table.insertRow();
-        row.insertCell(0).innerText = transaction.description;
-        row.insertCell(1).innerText = `$${transaction.amount.toFixed(2)}`;
-        row.insertCell(2).innerText = transaction.date;
+            transactions.forEach(transaction => {
+                let row = table.insertRow();
+                row.insertCell(0).innerText = transaction.description;
+                row.insertCell(1).innerText = `$${transaction.amount.toFixed(2)}`;
+                row.insertCell(2).innerText = transaction.date;
 
-        let deleteCell = row.insertCell(3);
-        let deleteButton = document.createElement("button");
-        deleteButton.innerText = "Delete";
-        deleteButton.onclick = function () {
-            transactions = transactions.filter(t => t.id !== transaction.id); // Remove transaction by unique ID
-            saveAndUpdate();
-        };
-        deleteCell.appendChild(deleteButton);
-    });
-}
+                let deleteCell = row.insertCell(3);
+                let deleteButton = document.createElement("button");
+                deleteButton.innerText = "Delete";
+                deleteButton.onclick = function () {
+                    transactions = transactions.filter(t => t.id !== transaction.id); // Remove transaction by unique ID
+                    saveAndUpdate();
+                };
+                deleteCell.appendChild(deleteButton);
+            });
+        }
 
-function saveAndUpdate() {
-    localStorage.setItem("transactions", JSON.stringify(transactions));
-    localStorage.setItem("currentBalance", currentBalance);
-    updateBalance();
-    updateTransactionTable();
-    updateGoalStatus();
-}
+        function saveAndUpdate() {
+            localStorage.setItem("transactions", JSON.stringify(transactions));
+            localStorage.setItem("currentBalance", currentBalance);
+            updateBalance();
+            updateTransactionTable();
+            updateGoalStatus();
+        }
 
-window.onload = saveAndUpdate;
+        window.onload = saveAndUpdate;
 
     </script>
 </body>
+</html>
